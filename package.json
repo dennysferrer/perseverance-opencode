@@ -1,0 +1,19 @@
+{
+  "name": "perseverance-opencode",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "vite": "^8.3.8"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.1"
+  }
+}
