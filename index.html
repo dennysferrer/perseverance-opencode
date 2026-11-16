@@ -105,11 +105,23 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .sidebar {
+      position: fixed; left: 0; top: 80px; bottom: 0; width: 200px; background: rgba(26,13,7,0.8); padding: 12px; z-index: 50; overflow-y: auto;
+      transition: transform .3s ease;
+      transform: translateX(-100%);
+    }
+    .sidebar.active { transform: translateX(0); }
+    .sidebar-header { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .sidebar-header h3 { margin: 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: rgba(243, 211, 176, .52); }
+    .sidebar-toggle { cursor: pointer; position: absolute; right: 12px; top: 8px; font-size: 14px; color: rgba(243, 211, 176, .5); }
+    .sidebar-content { max-height: 200px; overflow-y: auto; }
+    .sidebar-section { margin-bottom: 12px; }
+    .sidebar-section div:first-child { font-size: 9px; color: rgba(243, 211, 176, .52); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+    .sidebar-thumbnail { width: 40px; height: 40px; border: 1px solid rgba(255,176,102,.3); border-radius: 4px; cursor: pointer; background-size: cover; background-position: center; transition: transform .2s; }
+    .sidebar-thumbnail:hover { transform: scale(1.1); }
     @media (max-width: 720px) {
-      #ui { padding: 14px; }
-      .telemetry { left: 14px; bottom: 60px; min-width: 190px; padding: 10px 11px; }
-      footer#hint { right: 14px; bottom: 14px; font-size: 10.5px; }
-      h1 { font-size: 13px; letter-spacing: .2em; }
+      .sidebar { width: 100%; left: auto; top: 0; bottom: auto; height: 200px; transform: translateY(-100%); }
+      .sidebar.active { transform: translateY(0); }
     }
   </style>
 </head>
@@ -139,6 +151,30 @@
       <div class="row"><span>Posición</span><b id="t-pos">0, 0</b></div>
     </section>
 
+    <aside class="sidebar" id="camera-sidebar">
+      <div class="sidebar-header">
+        <h3 style="margin: 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: rgba(243, 211, 176, .52);">CÁMARAS MARTE</h3>
+        <span class="sidebar-toggle" style="cursor: pointer; font-size: 10px; color: rgba(243, 211, 176, .45); letter-spacing: .1em;">◀</span>
+      </div>
+      <div class="sidebar-content" style="display: none; max-height: 200px; overflow-y: auto;">
+        <div class="sidebar-section" id="mastcam-section">
+          <div style="font-size: 9px; color: rgba(243, 211, 176, .52); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px;">Mastcam-Z</div>
+          <div id="mastcam-thumbnails" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); gap: 2px; padding: 2px;"></div>
+        </div>
+        <div class="sidebar-section" id="nav-section" style="display:none;">
+          <div style="font-size: 9px; color: rgba(243, 211, 176, .52); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px;">Navcams</div>
+          <div id="nav-thumbnails" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); gap: 2px; padding: 2px;"></div>
+        </div>
+        <div class="sidebar-section" id="hazcam-section" style="display:none;">
+          <div style="font-size: 9px; color: rgba(243, 211, 176, .52); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px;">Hazcam</div>
+          <div id="hazcam-thumbnails" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); gap: 2px; padding: 2px;"></div>
+        </div>
+        <div class="sidebar-section" id="watson-section" style="display:none;">
+          <div style="font-size: 9px; color: rgba(243, 211, 176, .52); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px;">WATSON</div>
+          <div id="watson-thumbnails" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); gap: 2px; padding: 2px;"></div>
+        </div>
+      </div>
+    </aside>
     <footer id="hint">
       <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> conducir</span>
       <span><kbd>Shift</kbd> turbo</span>

@@ -132,10 +132,10 @@ export function createTerrain() {
 
   const colors = new Float32Array(pos.count * 3);
   const normals = geo.attributes.normal;
-  const cDark = new THREE.Color('#7c4529');
-  const cMid = new THREE.Color('#b1704a');
-  const cLight = new THREE.Color('#dca274');
-  const cRock = new THREE.Color('#8a6249');
+  const cDark = new THREE.Color('#5f351f');
+  const cMid = new THREE.Color('#8f5637');
+  const cLight = new THREE.Color('#b87c55');
+  const cRock = new THREE.Color('#6d4834');
   const c = new THREE.Color();
 
   for (let i = 0; i < pos.count; i++) {
@@ -144,12 +144,18 @@ export function createTerrain() {
     const y = pos.getY(i);
     const slope = 1 - normals.getY(i);
     const grain = noise2(x * 0.022, z * 0.022);
+    const speck = noise2(x * 0.11, z * 0.11);
     const broad = fbm(x * 0.004, z * 0.004, 3);
+    const patch = fbm(x * 0.013 + 3.1, z * 0.013 - 1.7, 3);
 
     c.copy(cDark)
       .lerp(cMid, clamp(grain * 0.95 + 0.12, 0, 1))
-      .lerp(cLight, clamp(y * 0.028 + broad * 0.42, 0, 1))
-      .lerp(cRock, clamp(slope * 2.4, 0, 1));
+      .lerp(cLight, clamp(y * 0.024 + broad * 0.36, 0, 1))
+      .lerp(cRock, clamp(slope * 2.4 + (patch - 0.5) * 0.5, 0, 1));
+
+    // Mottling fino y manchas oscuras para romper el color plano.
+    const shade = 0.86 + speck * 0.16 - Math.max(0, patch - 0.55) * 0.5;
+    c.multiplyScalar(clamp(shade, 0.7, 1.02));
 
     colors[i * 3] = c.r;
     colors[i * 3 + 1] = c.g;
@@ -159,10 +165,10 @@ export function createTerrain() {
 
   const mat = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.98,
+    roughness: 1,
     metalness: 0,
     normalMap: makeSandNormalMap(),
-    normalScale: new THREE.Vector2(0.46, 0.46),
+    normalScale: new THREE.Vector2(0.5, 0.5),
   });
 
   const mesh = new THREE.Mesh(geo, mat);

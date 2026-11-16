@@ -36,6 +36,7 @@ export class RoverController {
     this.odometer = 0;
 
     this.wheelHeights = new Float32Array(6);
+    this.wheelSpin = new Float32Array(6);
     this.wheelWorld = Array.from({ length: 6 }, () => new THREE.Vector3());
     this.tmp = new THREE.Vector3();
 
@@ -49,6 +50,7 @@ export class RoverController {
 
   update(dt, input) {
     const maxSpeed = input?.turbo ? MAX_TURBO : MAX_FORWARD;
+    const prevHeading = this.heading;
 
     if (input?.forward) this.speed += ACCEL * dt;
     else if (input?.back) this.speed -= ACCEL * dt;
@@ -72,8 +74,42 @@ export class RoverController {
     const pose = this.placeWheels(dt);
     this.applyBodyPose(pose, dt);
 
-    this.spinAngle += (this.speed * dt) / WHEEL_RADIUS;
-    for (const wheel of this.rover.wheels) wheel.spin.rotation.x = this.spinAngle;
+    const yawRate = dt > 0 ? (this.heading - prevHeading) / dt : 0;
+    this.updateWheels(dt, yawRate);
+  }
+
+  /** Rodadura diferencial (izquierda/derecha) y viraje de las ruedas extremas. */
+  updateWheels(dt, yawRate) {
+    const wheels = this.rover.wheels;
+    if (!wheels?.length) return;
+
+    const layout = this.rover.layout?.wheels ?? this.layout;
+    const trackHalf = this.rover.layout?.trackHalf ?? this.trackHalf;
+    const radius = this.rover.layout?.wheelRadius ?? WHEEL_RADIUS;
+    const half = wheels.length / 2;
+
+    // En arena la rueda patina ligeramente: gira algo más que el avance real.
+    const slip = 1 + Math.min(0.07, Math.abs(this.speed) * 0.014);
+
+    for (let i = 0; i < wheels.length; i++) {
+      const side = i < half ? -1 : 1;
+      const spec = layout.length >= wheels.length ? layout[i] : layout[i % 3];
+
+      // Velocidad del punto de contacto: avance ± giro del chasis.
+      const v = this.speed - side * yawRate * trackHalf;
+      this.wheelSpin[i] += (v * slip * dt) / radius;
+      wheels[i].spin.rotation.x = this.wheelSpin[i];
+
+      if (spec?.steer) {
+        // Delanteras hacia el giro, traseras en sentido contrario (Ackermann).
+        const target = this.steer * (spec.z >= 0 ? 1 : -1);
+        wheels[i].root.rotation.y += (target - wheels[i].root.rotation.y) * (1 - Math.exp(-11 * dt));
+      } else {
+        wheels[i].root.rotation.y *= Math.exp(-11 * dt);
+      }
+    }
+
+    this.spinAngle = this.wheelSpin[0];
   }
 
   resolveCollisions() {
@@ -105,12 +141,13 @@ export class RoverController {
     const sin = Math.sin(this.heading);
     const layout = this.rover.layout?.wheels ?? this.layout;
     const trackHalf = this.rover.layout?.trackHalf ?? this.trackHalf;
+    const radius = this.rover.layout?.wheelRadius ?? WHEEL_RADIUS;
     let sum = 0;
 
     for (let i = 0; i < 6; i++) {
       const side = i < 3 ? -1 : 1;
-      const spec = layout[i % 3];
-      const lx = side * trackHalf;
+      const spec = layout.length >= 6 ? layout[i] : layout[i % 3];
+      const lx = spec.x ?? side * trackHalf;
       const lz = spec.z;
 
       const wx = this.x + lx * cos + lz * sin;
@@ -118,7 +155,7 @@ export class RoverController {
       const h = this.heightAt(wx, wz);
 
       this.wheelHeights[i] = h;
-      this.wheelWorld[i].set(wx, h + WHEEL_RADIUS, wz);
+      this.wheelWorld[i].set(wx, h + radius, wz);
       sum += h;
     }
 
@@ -149,15 +186,15 @@ export class RoverController {
     this.rover.tilt.rotation.z = this.roll;
     this.rover.group.updateMatrixWorld(true);
 
-    for (let i = 0; i < this.rover.wheels.length; i++) {
-      const wheel = this.rover.wheels[i];
-      this.tmp.copy(this.wheelWorld[i]);
-      this.rover.tilt.worldToLocal(this.tmp);
-      wheel.root.position.copy(this.tmp);
-
-      const layout = this.rover.layout?.wheels ?? this.layout;
-      const spec = layout[i % 3];
-      if (spec.steer) wheel.root.rotation.y = i < 3 ? this.steer : -this.steer;
+    // En el rover procedural las ruedas cuelgan del cuerpo: se coloca cada
+    // una en su punto de contacto. El modelo NASA ya trae la suspensión.
+    if (!this.rover.isReal) {
+      for (let i = 0; i < this.rover.wheels.length; i++) {
+        const wheel = this.rover.wheels[i];
+        this.tmp.copy(this.wheelWorld[i]);
+        this.rover.tilt.worldToLocal(this.tmp);
+        wheel.root.position.copy(this.tmp);
+      }
     }
   }
 

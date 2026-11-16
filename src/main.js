@@ -10,9 +10,10 @@ import { createTracks } from './world/tracks.js';
 import { createDust } from './world/dust.js';
 import { createMoons } from './world/moons.js';
 import { createMotes } from './world/motes.js';
-import { createRealRover } from './rover/real.js';
+import { createRealRover, pulseIndicator } from './rover/real.js';
 import { RoverController } from './rover/controller.js';
 import { Hud } from './ui/hud.js';
+import { initCameraPhotos } from './ui/camera-photos.js';
 
 // ---------------------------------------------------------------------------
 // Escena
@@ -48,6 +49,8 @@ scene.add(rover.group);
 let modelReady = false;
 rover.ready.then((ok) => {
   modelReady = ok;
+  // Inicializar el visor de fotos de cámaras.
+  if (ok) initCameraPhotos(rover, scene, camera, renderer);
 });
 
 const controller = new RoverController(rover, { heightAt: terrainHeight, boulders });
@@ -121,6 +124,14 @@ renderer.setAnimationLoop(() => {
   timer.update();
   const dt = Math.min(timer.getDelta(), 1 / 20);
   if (!window.__paused) step(dt);
+
+  // Actualizar pulsación de indicadores de cámara.
+  if (rover.cameraIndicators) {
+    rover.cameraIndicators.forEach(({ indicator }) => {
+      pulseIndicator(indicator, dt);
+    });
+  }
+
   renderer.render(scene, camera);
   if (!ready && modelReady) markReady();
 });
